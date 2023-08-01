@@ -7,6 +7,8 @@ import config
 from models import GroupDAL, async_session
 from helpers import get_media_type
 
+from emoji import emojize
+
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters.builtin import ChatTypeFilter
 
@@ -126,18 +128,35 @@ async def send_album_posts(event: events.Album):
 
 
 async def cmd_start(message: types.Message):
-    await message.answer('Hi! Send me telegram channel URL!')
+    await message.answer(
+        f"Hi! Add me to group where you want me to send posts.\
+        Send me a telegram channel URL that you want to have posts from {emojize(':check_mark_button:')}!",
+    )
+
 
 
 async def take_channel(message: types.Message):
+    # Connect telethon client if necessary
+    if not client.is_connected():
+        await client.connect()
+
     channel_url = re.search(r"(?i)t\.me\/[a-zA-Z0-9_+]+", message.text).group(0)
-    await message.answer('I got it')
+    await message.answer(emojize(
+        'I got it :OK_hand: To change channel, just send url of channel :speech_balloon:'
+    ))
     channel_url = await client.get_entity(channel_url)
 
     client.add_event_handler(send_posts, events.NewMessage(chats=[channel_url]))
     client.add_event_handler(send_album_posts, events.Album(chats=[channel_url]))
     async with client:
         await client.run_until_disconnected()
+
+
+async def stop_parsing(message: types.Message):
+    await client.disconnect()
+    await message.answer(emojize(
+        'Parsing is stopped:no_entry: To begin listening of channel sent channel URL!'
+    ))
 
 
 def register_handlers(dp: Dispatcher) -> Dispatcher:
@@ -147,6 +166,7 @@ def register_handlers(dp: Dispatcher) -> Dispatcher:
         get_member_groups,
         ChatTypeFilter(chat_type=types.ChatType.GROUP)
     )
+    dp.register_message_handler(stop_parsing, commands=['break'])
 
     return dp
 
