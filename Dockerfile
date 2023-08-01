@@ -7,7 +7,8 @@ COPY ./requirements.txt /tmp/requirements.txt
 
 WORKDIR /app
 
-RUN apk add --update --no-cache build-base musl-dev  \
+RUN apk add --update --no-cache --virtual .tmp-build-deps build-base musl-dev  \
       libffi-dev openssl-dev cargo pkgconfig &&  \
     pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt
+    pip install -r /tmp/requirements.txt && \
+    apk del .tmp-build-deps
